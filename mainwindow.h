@@ -29,6 +29,14 @@ private slots:
     void on_year_valueChanged(int arg1);                // событие редактирования года
     void on_price_valueChanged(double arg1);            // событие редактирования цены
     void on_del_clicked();                              // клик по кнопке удалить запись
+    void on_clear_clicked();                            // клик по кнопке удалить все записи
+    void on_next_clicked();                             // клик по кнопке вправо на один
+    void on_end_clicked();                              // клик по кнопке вправо последний
+    void on_prev_clicked();                             // клик по кнопке вправо предыдущий
+    void on_start_clicked();                            // клик по кнопке вправо в начало
+    void on_save_clicked();                             // клик по кнопке сохранить
+
+    void on_open_clicked();
 
 private:
     Ui::MainWindow *ui;

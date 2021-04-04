@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QDebug>
 #include <QString>
+#include <iostream>     // модуль работы с потоками
+#include <fstream>      // чтения/записи данных из/в файл
 
 /**
  * Класс часов
@@ -27,6 +29,26 @@ public:
         year=1900;
         price=0.00;
         strcpy(country,  (""));
+    }
+
+    /**
+     * перегрузка вывода
+     * @brief operator <<
+     * @return
+     */
+    friend std::ostream & operator<<(std::ostream & f, watchRow & c)
+    {
+        return f<< c.company<<" "<< c.country<< " "<<c.model<< " "<<c.num<< " "<<c.price<< " "<<c.year;
+    }
+
+    /**
+     * перегрузка ввода
+     * @brief operator >>
+     * @return
+     */
+    friend std::istream & operator>>(std::istream & f, watchRow & c)
+    {
+        return f>>c.company >>c.country>>c.model>>c.num>>c.price>>c.year;
     }
 
 };
@@ -80,7 +102,17 @@ public:
      * @brief del
      */
     void del(int pos){
-        vector.removeAt(pos);
+        vector.remove(pos);
+    }
+
+    /**
+     * Удаление всех записей вектора
+     * @brief clear
+     */
+    void clear(){
+        // vector.clear();
+        // TODO: баг с последней записью
+        vector.remove(1, vector.count()-1);
     }
     /**
      * Дебаг содержимого набора

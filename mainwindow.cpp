@@ -1,8 +1,7 @@
-#include <mainwindow.h>
-#include <ui_mainwindow.h>
-#include <QTextDocument>
-
-
+#include <ui_mainwindow.h>              // хедерник формы
+#include <mainwindow.h>                 // хедерник событий формы
+#include <QFileDialog>                  // диалог файла
+#include <fstream>                      // чтения/записи данных из/в файл
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -68,8 +67,27 @@ void MainWindow::editActive(){
         ui->del     ->setEnabled(false);    // кнопка удалить запись
         ui->clear   ->setEnabled(false);    // кнопка очистить записи
         ui->save    ->setEnabled(false);    // кнопка сохранить записи
+        ui->next    ->setEnabled(false);    // отключаем кн. следующая
+        ui->end     ->setEnabled(false);    // отключаем кн. последняя
     }
-
+    // запрашиваем номер выбранной строки
+    int currentRow = ui->table->currentRow();
+    // для последней записи
+    if (currentRow == ui->table->rowCount()-1){
+        ui->next->setEnabled(false);        // отключаем кн. следующая
+        ui->end->setEnabled(false);         // отключаем кн. последняя
+    } else {
+        ui->next->setEnabled(true);         // включаем кн. следующая
+        ui->end->setEnabled(true);          // включаем кн. последняя
+    }
+    // для первой записи
+    if (0 == currentRow){
+        ui->prev->setEnabled(false);        // отключаем кн. предыдущая
+        ui->start->setEnabled(false);       // отключаем кн. первая
+    } else {
+        ui->prev->setEnabled(true);         // включаем кн. предыдущая
+        ui->start->setEnabled(true);          // включаем кн. первая
+    }
 }
 /**
  * Событие выбора строки в таблице
@@ -97,6 +115,8 @@ void MainWindow::on_table_itemSelectionChanged()
         ui->country->setText(QString::fromLocal8Bit(row.country));
         // передаем запись о цене в текстовое поле для редактирования
         ui->price->setValue(row.price);
+        // проверка состояний кнопок
+        editActive();
     }
 }
 
@@ -185,17 +205,152 @@ void MainWindow::on_del_clicked()
 {
     // запрашиваем номер выбранной строки
     int currentRow = ui->table->currentRow();
-    if (watchObject.count()>=0){
+    if (watchObject.count()>1){
         // удаление записи из таблицы
-        try {
-            ui->table->removeRow(currentRow);
-        } catch(...){
-            qDebug()<<"removeRow 0";
-        }
+        ui->table->removeRow(currentRow);
         // удаление записи из вектора
         watchObject.del(currentRow);
+        // Проверка активности после удаления
+        editActive();
+    } else {
+        // TODO::БАГ
+        // вместо удаления последеней записи очищаем таблицу
+        ui->table->clearContents();
+        ui->company->setText("");
+        ui->model->setText("");
+        ui->year->setValue(0);
+        ui->country->setText("");
+        ui->price->setValue(0);
     }
 
-    // Проверка активности после удаления
-    editActive();
+
+}
+
+/**
+ * Удаление всех записей
+ * @brief MainWindow::on_clear_clicked
+ */
+void MainWindow::on_clear_clicked()
+{
+    // удаление записей из таблицы
+    ui->table->clearContents();
+    //TODO:: БАГ с удалением последей записи ui->table->rowCount()-1
+    ui->table->model()->removeRows(0, ui->table->rowCount()-1);
+    // удаление записей из вектора
+    watchObject.clear();
+    // очищаем текстовые поля
+    ui->company->setText("");
+    ui->model->setText("");
+    ui->year->setValue(0);
+    ui->country->setText("");
+    ui->price->setValue(0);
+}
+
+/**
+ * Шаг вправо
+ * @brief MainWindow::on_next_clicked
+ */
+void MainWindow::on_next_clicked()
+{
+    int currentRow = ui->table->currentRow();
+    ui->table->selectRow(currentRow+1);
+}
+/**
+ * Последняя запись
+ * @brief MainWindow::on_end_clicked
+ */
+void MainWindow::on_end_clicked()
+{
+   ui->table->selectRow(ui->table->rowCount()-1);
+}
+
+/**
+ * Предыдущая запись
+ * @brief MainWindow::on_prev_clicked
+ */
+void MainWindow::on_prev_clicked()
+{
+    int currentRow = ui->table->currentRow();
+    ui->table->selectRow(currentRow-1);
+}
+
+/**
+ * Последняя запись
+ * @brief MainWindow::on_start_clicked
+ */
+void MainWindow::on_start_clicked()
+{
+    ui->table->selectRow(0);
+}
+
+/**
+ * Сохранить записи
+ * @brief MainWindow::on_save_clicked
+ */
+void MainWindow::on_save_clicked()
+{
+    QString fileName = QFileDialog::getSaveFileName(NULL, "test", "", "*");
+    qDebug()<< " сохранение в файл: " <<fileName;
+    /**
+     * Сохранение в файл проверка перегрузки оператора <<
+     */
+    QFile file(fileName);
+    if (file.open(QIODevice::WriteOnly))
+    {
+        QTextStream stream(&file);
+        for(int i=0; i<watchObject.count(); i++) {
+            watchRow row = watchObject.get(i);
+            //Запишет - company country model num price year
+            stream << QString::fromLocal8Bit(row.company)<< ";"
+                   << QString::fromLocal8Bit(row.country)<< ";"
+                   << QString::fromLocal8Bit(row.model)<< ";"
+                   << QString::number(row.year)<< ";"
+                   << QString::number(row.price)<< ";"
+                   << QString::number(row.num)<< ";"
+                   << endl;
+        }
+        file.close();
+        if (stream.status() != QTextStream::Ok)
+        {
+            qDebug() << "Ошибка записи файла";
+        }
+    }
+
+}
+/**
+ * Чтение записей из файла
+ * @brief MainWindow::on_open_clicked
+ */
+void MainWindow::on_open_clicked()
+{
+    QString fileName = QFileDialog::getOpenFileName(NULL, "", "", "*");
+    qDebug()<< " чтение из файла: " <<fileName;
+    QFile file (fileName);
+    if(file.open(QIODevice::ReadOnly))
+    {
+        QTextStream stream(&file);
+        QString str;
+        while (!stream.atEnd())
+        {
+            str = stream.readLine();
+            QStringList data = str.split(";");
+            // Добавляем запись в вектор
+            // Добавляем запись в таблицу
+            on_add_clicked();
+            // Сохраняем значения записи на форме
+            ui->company->setText(data.value(0));
+            ui->country->setText(data.value(1));
+            ui->model->setText(data.value(2));
+            ui->year->setValue(QString(data.value(3)).toInt());
+            ui->price->setValue(QString(data.value(4)).toDouble());
+            // Сохраняем значения в векторе
+            update_watch();
+            qDebug() << data;
+        }
+        if(stream.status()!= QTextStream::Ok)
+        {
+            qDebug() << "Ошибка чтения файла";
+        }
+        file.close();
+    }
 }
