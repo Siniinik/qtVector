@@ -1,0 +1,74 @@
+#ifndef WATCH_H
+#define WATCH_H
+
+#include <QObject>
+#include <QDebug>
+#include <QString>
+
+/**
+ * Класс часов
+ * @brief The watch class
+ */
+class watchRow{
+public:
+
+    char    company[50];    // фирма
+    char    model[50];      // модель
+    int     year;           // год
+    char    country[50];    // страна
+    double  price;          // цена
+
+    //значения по умолчанию
+    //конструктор записи о часах
+    watchRow(int number){
+        strcpy(company, ("фирма " + QString::number(number)).toUtf8().data());
+        strcpy(model,   ("модель " + QString::number(number)).toUtf8().data());
+        year=1900;
+        price=0.00;
+        strcpy(country,  ("страна " + QString::number(number)).toUtf8().data()));
+    }
+};
+
+/**
+ * Класс набора часов
+ * @brief The watch class
+ */
+class watch : public QObject  //класс наследник для сигнал слотов
+{
+    Q_OBJECT
+private:
+    QVector <watchRow> vector;
+
+    // Конструктор класса часы
+//    watch(){
+
+//    }
+
+    // Метод добаления записи о часах
+
+    // Количество записей
+
+public:
+    /**
+     * запрос записи по номеру
+     * @brief get
+     * @param i
+     * @return
+     */
+    watchRow get(int i)
+    {
+        return vector.at(i);
+    }
+
+public slots:
+    /**
+     * Добавление новой записи со значениями по умолчанию
+     * @brief add
+     */
+    void add(){
+        //qDebug() << "vector.size = " << vector.size();
+       vector.prepend(watchRow(vector.count()+1));
+    }
+};
+
+#endif // WATCH_H
